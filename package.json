@@ -1,0 +1,109 @@
+{
+  "name": "stm32-helper-extension",
+  "displayName": "STM32 Helper",
+  "description": "Simple STM32 build/flash helper commands for VSCode.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "stm32Helper.build",
+        "title": "STM32 Helper: Build"
+      },
+      {
+        "command": "stm32Helper.flash",
+        "title": "STM32 Helper: Flash"
+      },
+      {
+        "command": "stm32Helper.buildFlash",
+        "title": "STM32 Helper: Build + Flash"
+      },
+      {
+        "command": "stm32Helper.clean",
+        "title": "STM32 Helper: Clean"
+      },
+      {
+        "command": "stm32Helper.selectBoard",
+        "title": "STM32 Helper: Select Board"
+      },
+      {
+        "command": "stm32Helper.autoConfigureProject",
+        "title": "STM32 Helper: Auto Configure Project"
+      }
+    ],
+    "configuration": {
+      "title": "STM32 Helper",
+      "properties": {
+        "stm32Helper.activeBoard": {
+          "type": "string",
+          "default": "f407-cmsis-dap",
+          "description": "Name of the currently active board profile."
+        },
+        "stm32Helper.autoConfigureOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically detect and update board profiles when the workspace opens."
+        },
+        "stm32Helper.boards": {
+          "type": "array",
+          "description": "Board profiles used by STM32 Helper commands.",
+          "default": [
+            {
+              "name": "f407-cmsis-dap",
+              "cwd": "${workspaceFolder}",
+              "buildCommand": "cmake --preset Debug && cmake --build --preset Debug",
+              "flashCommand": "openocd -f openocd.cfg -c \"program build/Debug/LED.elf verify reset exit\"",
+              "cleanCommand": "cmake --build --preset Debug --target clean"
+            },
+            {
+              "name": "f103-stlink",
+              "cwd": "${workspaceFolder}",
+              "buildCommand": "cmake --preset Debug && cmake --build --preset Debug",
+              "flashCommand": "openocd -f interface/stlink.cfg -f target/stm32f1x.cfg -c \"program build/Debug/firmware.elf verify reset exit\"",
+              "cleanCommand": "cmake --build --preset Debug --target clean"
+            }
+          ],
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "cwd": {
+                "type": "string"
+              },
+              "buildCommand": {
+                "type": "string"
+              },
+              "flashCommand": {
+                "type": "string"
+              },
+              "cleanCommand": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "buildCommand",
+              "flashCommand"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "lint": "echo \"No lint configured\""
+  },
+  "license": "MIT"
+}
