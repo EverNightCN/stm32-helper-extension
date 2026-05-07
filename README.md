@@ -15,6 +15,19 @@ A lightweight VSCode extension that provides one-click STM32 workflow commands f
 
 It is especially useful when switching between different boards and programmers (for example, STM32F4 + CMSIS-DAP and STM32F1 + ST-Link).
 
+### v0.0.4 release highlights
+
+GitHub [Releases](https://github.com/EverNightCN/stm32-helper-extension/releases) attach **two VSIX files** for this line — pick **one** (same `stm32Helper.*` command IDs; do not enable both).
+
+| Package | When to use |
+|--------|-------------|
+| **`stm32-helper-extension-0.0.4.vsix`** | Default build: **macOS / Linux / Windows** when your environment already runs the configured commands as expected. |
+| **`stm32-helper-extension-windows-0.0.4-win.1.vsix`** | **Windows** when the editor’s automation shell is **PowerShell 5.x** (or you want **CMD**-style `&&` and OpenOCD quoting). Tasks are run via **`cmd.exe /d /c`**. |
+
+**Standard package (0.0.4)** includes: one-click **Build / Flash / Build+Flash / Clean**; **board profiles** and **Select Board**; **Auto Configure Project** (OpenOCD + ELF from CMake, optional `.ioc`); optional **startup auto-config** (`stm32Helper.autoConfigureOnStartup`); **Sync CMake User Sources** for CubeMX CMake (merge user sources into root `CMakeLists.txt`, skip Cube-owned paths in `cmake/stm32cubemx/CMakeLists.txt`); **`.vscodeignore`** so the Windows subfolder is not bundled into this VSIX.
+
+**Windows package** — same features; only the **task runner** differs on `win32` (see table above). Sources live under `stm32-helper-extension-windows/` in this repo.
+
 ### Windows variant
 
 If you use **Cursor / VS Code on Windows** and the integrated terminal defaults to **PowerShell 5.x**, automation tasks may fail because **`&&` is not supported** there. Install **STM32 Helper (Windows)** instead (folder `stm32-helper-extension-windows/` in this repo): it runs commands through **`cmd.exe /d /c`**, matching **CMD** semantics for `&&` and OpenOCD quoting.
@@ -137,6 +150,19 @@ This generates a `.vsix` file in the extension root directory.
 - 工程自动配置（Auto Configure）
 
 适合在不同芯片/下载器之间切换，例如 STM32F4 + CMSIS-DAP、STM32F1 + ST-Link。
+
+### v0.0.4 版本要点
+
+GitHub [Releases](https://github.com/EverNightCN/stm32-helper-extension/releases) 在同一页面提供 **两个 VSIX**，任选其一安装（命令 ID 均为 `stm32Helper.*`，**勿同时启用两个扩展**）。
+
+| 安装包 | 适用场景 |
+|--------|----------|
+| **`stm32-helper-extension-0.0.4.vsix`** | 通用默认包：**macOS / Linux / Windows**，当你的环境已能正确执行配置的命令（如 `bash`、**PowerShell 7+** 等）。 |
+| **`stm32-helper-extension-windows-0.0.4-win.1.vsix`** | **Windows** 专用：默认自动化终端为 **PowerShell 5.x**，或你希望 **`&&` / OpenOCD 引号**与 **CMD** 一致时；任务通过 **`cmd.exe /d /c`** 执行。 |
+
+**通用版（0.0.4）** 包含：一键 **编译 / 烧录 / 编译并烧录 / 清理**；**板卡配置**与 **Select Board**；**Auto Configure Project**（根据 CMake 推断 ELF、优先 `openocd.cfg`、可用 `.ioc` 推断目标）；可选 **打开工程自动配置**（`stm32Helper.autoConfigureOnStartup`）；**Sync CMake User Sources**（CubeMX CMake：把用户源合并进根目录 `CMakeLists.txt`，跳过 `cmake/stm32cubemx` 中已由 Cube 列出的路径）；**`.vscodeignore`** 避免把 Windows 子目录打进本 VSIX。
+
+**Windows 版** — 功能与通用版相同，仅在 Windows 上 **任务执行方式** 不同（见上表）。源码目录：`stm32-helper-extension-windows/`。
 
 ### Windows 专用版
 
