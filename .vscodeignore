@@ -1,0 +1,7 @@
+.vscode/**
+.vscodeignore
+.git/**
+.gitignore
+**/*.vsix
+node_modules/**
+stm32-helper-extension-windows/**

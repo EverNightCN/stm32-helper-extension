@@ -2,7 +2,7 @@
   "name": "stm32-helper-extension",
   "displayName": "STM32 Helper",
   "description": "Simple STM32 build/flash helper commands for VSCode.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"
