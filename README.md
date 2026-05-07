@@ -25,6 +25,32 @@ Open Command Palette (`Cmd/Ctrl + Shift + P`) and run:
 - `STM32 Helper: Clean`
 - `STM32 Helper: Select Board`
 - `STM32 Helper: Auto Configure Project`
+- `STM32 Helper: Sync CMake User Sources`
+
+## Sync CMake user sources (STM32CubeMX CMake)
+
+For STM32CubeMX CMake projects, Cube-generated sources live under `cmake/stm32cubemx/CMakeLists.txt`, while **extra user sources** should be listed in the root `CMakeLists.txt` inside:
+
+```cmake
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    # Add user sources here
+)
+```
+
+Run **`STM32 Helper: Sync CMake User Sources`** to:
+
+- Scan workspace files matching `stm32Helper.cmakeSync.scanGlobs` (defaults to `Core/**/*.{c,cpp,...}`)
+- Parse `${CMAKE_CURRENT_SOURCE_DIR}/../../...` entries from `cmake/stm32cubemx/CMakeLists.txt` and **skip** those paths (Cube-owned)
+- Merge remaining sources into the root `CMakeLists.txt` block after `# Add user sources here`
+- Preserve any paths you already listed manually in that block
+
+Optional settings:
+
+- `stm32Helper.cmakeSync.rootCMakeLists`
+- `stm32Helper.cmakeSync.cubeMxCMakeLists`
+- `stm32Helper.cmakeSync.markerLine`
+- `stm32Helper.cmakeSync.scanGlobs`
+- `stm32Helper.cmakeSync.excludeGlobs`
 
 ## Configuration
 
@@ -116,6 +142,32 @@ This generates a `.vsix` file in the extension root directory.
 - `STM32 Helper: Clean`
 - `STM32 Helper: Select Board`
 - `STM32 Helper: Auto Configure Project`
+- `STM32 Helper: Sync CMake User Sources`
+
+## 同步 CMake 用户源文件（CubeMX CMake）
+
+STM32CubeMX 生成的源文件列表在 `cmake/stm32cubemx/CMakeLists.txt`；**你自己新增的源文件**应写在工程根目录 `CMakeLists.txt` 的：
+
+```cmake
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+    # Add user sources here
+)
+```
+
+执行 **`STM32 Helper: Sync CMake User Sources`** 会：
+
+- 按 `stm32Helper.cmakeSync.scanGlobs`（默认扫描 `Core/` 下源码）查找文件
+- 解析 `cmake/stm32cubemx/CMakeLists.txt` 里 `${CMAKE_CURRENT_SOURCE_DIR}/../../...` 列出的路径并**跳过**（视为 Cube 已收录）
+- 将其余文件路径合并进根目录 `CMakeLists.txt` 中 `# Add user sources here` 之后
+- 保留你在该区域内已手写添加的路径
+
+可选配置项：
+
+- `stm32Helper.cmakeSync.rootCMakeLists`
+- `stm32Helper.cmakeSync.cubeMxCMakeLists`
+- `stm32Helper.cmakeSync.markerLine`
+- `stm32Helper.cmakeSync.scanGlobs`
+- `stm32Helper.cmakeSync.excludeGlobs`
 
 ## 配置方式
 

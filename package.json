@@ -2,7 +2,7 @@
   "name": "stm32-helper-extension",
   "displayName": "STM32 Helper",
   "description": "Simple STM32 build/flash helper commands for VSCode.",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"
@@ -39,6 +39,10 @@
       {
         "command": "stm32Helper.autoConfigureProject",
         "title": "STM32 Helper: Auto Configure Project"
+      },
+      {
+        "command": "stm32Helper.syncCMakeSources",
+        "title": "STM32 Helper: Sync CMake User Sources"
       }
     ],
     "configuration": {
@@ -53,6 +57,48 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically detect and update board profiles when the workspace opens."
+        },
+        "stm32Helper.cmakeSync.rootCMakeLists": {
+          "type": "string",
+          "default": "${workspaceFolder}/CMakeLists.txt",
+          "description": "Root CMakeLists.txt where CubeMX user sources block lives."
+        },
+        "stm32Helper.cmakeSync.cubeMxCMakeLists": {
+          "type": "string",
+          "default": "${workspaceFolder}/cmake/stm32cubemx/CMakeLists.txt",
+          "description": "STM32CubeMX generated CMake file used to skip Cube-owned sources."
+        },
+        "stm32Helper.cmakeSync.markerLine": {
+          "type": "string",
+          "default": "# Add user sources here",
+          "description": "Marker line inside target_sources(...) for user-added sources."
+        },
+        "stm32Helper.cmakeSync.scanGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "Core/**/*.c",
+            "Core/**/*.cpp",
+            "Core/**/*.cxx",
+            "Core/**/*.s",
+            "Core/**/*.S"
+          ],
+          "description": "Workspace-relative globs scanned for new source files."
+        },
+        "stm32Helper.cmakeSync.excludeGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/build/**",
+            "**/build-gcc/**",
+            "**/.git/**",
+            "**/tools/stm32-helper-extension/**"
+          ],
+          "description": "Paths excluded after scanning (simple glob matching)."
         },
         "stm32Helper.boards": {
           "type": "array",

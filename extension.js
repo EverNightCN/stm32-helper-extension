@@ -238,6 +238,191 @@ async function runForActiveBoard(action) {
   }
 }
 
+function getCmakeSyncSettings() {
+  const ws = vscode.workspace.getConfiguration();
+  const rootCMakeLists = substituteWorkspaceFolder(
+    ws.get("stm32Helper.cmakeSync.rootCMakeLists", "${workspaceFolder}/CMakeLists.txt")
+  );
+  const cubeMxCMakeLists = substituteWorkspaceFolder(
+    ws.get(
+      "stm32Helper.cmakeSync.cubeMxCMakeLists",
+      "${workspaceFolder}/cmake/stm32cubemx/CMakeLists.txt"
+    )
+  );
+  const markerLine = ws.get("stm32Helper.cmakeSync.markerLine", "# Add user sources here");
+  const scanGlobs = ws.get("stm32Helper.cmakeSync.scanGlobs", [
+    "Core/**/*.c",
+    "Core/**/*.cpp",
+    "Core/**/*.cxx",
+    "Core/**/*.s",
+    "Core/**/*.S"
+  ]);
+  const excludeGlobs = ws.get("stm32Helper.cmakeSync.excludeGlobs", [
+    "**/build/**",
+    "**/build-gcc/**",
+    "**/.git/**",
+    "**/tools/stm32-helper-extension/**"
+  ]);
+  return { rootCMakeLists, cubeMxCMakeLists, markerLine, scanGlobs, excludeGlobs };
+}
+
+function parseCubeMxSourcePaths(cubeContent) {
+  const set = new Set();
+  const re =
+    /\$\{CMAKE_CURRENT_SOURCE_DIR\}\/\.\.\/\.\.\/([^)\s]+\.(?:c|cpp|cxx|s|S))/gi;
+  let match = re.exec(cubeContent);
+  while (match) {
+    set.add(match[1].replace(/\\/g, "/"));
+    match = re.exec(cubeContent);
+  }
+  return set;
+}
+
+function parseUserSourcesBetweenMarker(content, markerLine) {
+  const lines = content.split(/\r?\n/);
+  let markerIdx = -1;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (lines[i].includes(markerLine)) {
+      markerIdx = i;
+      break;
+    }
+  }
+  if (markerIdx === -1) {
+    return { error: `Marker not found: ${markerLine}` };
+  }
+
+  let closeIdx = -1;
+  for (let i = markerIdx + 1; i < lines.length; i += 1) {
+    if (lines[i].trim() === ")") {
+      closeIdx = i;
+      break;
+    }
+  }
+  if (closeIdx === -1) {
+    return { error: "Could not find closing ) for target_sources block." };
+  }
+
+  const existing = new Set();
+  for (let i = markerIdx + 1; i < closeIdx; i += 1) {
+    const trimmed = lines[i].trim();
+    if (!trimmed || trimmed.startsWith("#")) {
+      continue;
+    }
+    const pathMatch = trimmed.match(/^([^\s#]+\.(?:c|cpp|cxx|s|S))\s*$/);
+    if (pathMatch) {
+      existing.add(pathMatch[1].replace(/\\/g, "/"));
+    }
+  }
+
+  return { lines, markerIdx, closeIdx, existing };
+}
+
+function shouldExcludeRelativePath(relPath, excludeGlobs) {
+  const rel = relPath.replace(/\\/g, "/");
+  const segments = rel.split("/").filter(Boolean);
+  if (segments.includes("build") || segments.includes("build-gcc") || segments.includes(".git")) {
+    return true;
+  }
+  if (rel.startsWith("tools/stm32-helper-extension/")) {
+    return true;
+  }
+  if (!Array.isArray(excludeGlobs)) {
+    return false;
+  }
+  return excludeGlobs.some((pattern) => {
+    const glob = String(pattern).replace(/\\/g, "/").replace(/^\*\*\//, "");
+    if (glob.endsWith("/**")) {
+      const prefix = glob.slice(0, -3);
+      return rel === prefix || rel.startsWith(`${prefix}/`);
+    }
+    return rel === glob || rel.startsWith(`${glob}/`);
+  });
+}
+
+async function collectScannedSourcePaths(workspaceFolder, wfUri, scanGlobs, excludeGlobs) {
+  const uriSet = new Map();
+  const globs = Array.isArray(scanGlobs) && scanGlobs.length > 0 ? scanGlobs : ["Core/**/*.c"];
+
+  await Promise.all(
+    globs.map(async (globPattern) => {
+      const pattern = new vscode.RelativePattern(wfUri, globPattern);
+      const found = await vscode.workspace.findFiles(pattern, null, 5000);
+      found.forEach((uri) => uriSet.set(uri.fsPath, uri));
+    })
+  );
+
+  return [...uriSet.values()]
+    .map((uri) => path.relative(workspaceFolder, uri.fsPath).replace(/\\/g, "/"))
+    .filter((rel) => !shouldExcludeRelativePath(rel, excludeGlobs));
+}
+
+async function syncCMakeSources() {
+  const workspaceFolder = getWorkspaceFolder();
+  if (!workspaceFolder) {
+    vscode.window.showErrorMessage("STM32 Helper: open a workspace first.");
+    return;
+  }
+
+  const { rootCMakeLists, cubeMxCMakeLists, markerLine, scanGlobs, excludeGlobs } =
+    getCmakeSyncSettings();
+
+  const cubeContent = readTextIfExists(cubeMxCMakeLists);
+  if (!cubeContent) {
+    vscode.window.showErrorMessage(
+      `STM32 Helper: CubeMX CMake not found: ${cubeMxCMakeLists}`
+    );
+    return;
+  }
+
+  const cubeOwned = parseCubeMxSourcePaths(cubeContent);
+  let rootContent = readTextIfExists(rootCMakeLists);
+  if (!rootContent) {
+    vscode.window.showErrorMessage(`STM32 Helper: Root CMakeLists.txt not found: ${rootCMakeLists}`);
+    return;
+  }
+
+  const parsed = parseUserSourcesBetweenMarker(rootContent, markerLine);
+  if (parsed.error) {
+    vscode.window.showErrorMessage(`STM32 Helper: ${parsed.error}`);
+    return;
+  }
+
+  const wfUri = vscode.workspace.workspaceFolders[0].uri;
+  const scanned = await collectScannedSourcePaths(
+    workspaceFolder,
+    wfUri,
+    scanGlobs,
+    excludeGlobs
+  );
+
+  const manualAndNew = new Set(parsed.existing);
+  scanned.forEach((rel) => {
+    if (!cubeOwned.has(rel)) {
+      manualAndNew.add(rel);
+    }
+  });
+
+  const sorted = [...manualAndNew].sort((a, b) => a.localeCompare(b));
+  const newLines = [...parsed.lines.slice(0, parsed.markerIdx + 1)];
+  sorted.forEach((p) => {
+    newLines.push(`    ${p}`);
+  });
+  newLines.push(...parsed.lines.slice(parsed.closeIdx));
+
+  const nextContent = newLines.join("\n");
+  if (nextContent === rootContent) {
+    vscode.window.showInformationMessage(
+      "STM32 Helper: CMake user sources already up to date."
+    );
+    return;
+  }
+
+  fs.writeFileSync(rootCMakeLists, nextContent, "utf8");
+  vscode.window.showInformationMessage(
+    `STM32 Helper: Updated ${sorted.length} user source path(s) in CMakeLists.txt.`
+  );
+}
+
 async function selectBoard() {
   const { boards, config } = getBoardsConfig();
   if (!Array.isArray(boards) || boards.length === 0) {
@@ -272,7 +457,8 @@ function activate(context) {
     ),
     vscode.commands.registerCommand("stm32Helper.clean", () => runForActiveBoard("clean")),
     vscode.commands.registerCommand("stm32Helper.selectBoard", selectBoard),
-    vscode.commands.registerCommand("stm32Helper.autoConfigureProject", autoConfigureProject)
+    vscode.commands.registerCommand("stm32Helper.autoConfigureProject", autoConfigureProject),
+    vscode.commands.registerCommand("stm32Helper.syncCMakeSources", syncCMakeSources)
   );
 
   void maybeAutoConfigureOnStartup();
