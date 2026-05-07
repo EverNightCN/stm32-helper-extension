@@ -170,15 +170,29 @@ async function maybeAutoConfigureOnStartup() {
   }
 }
 
+/**
+ * On Windows, Cursor/VS Code may use PowerShell as the default automation shell.
+ * PowerShell 5.x does not support `&&`, while CMD does. We always run user
+ * commands through `cmd.exe /d /c ...` so `&&`, quoting, and OpenOCD `-c "..."`
+ * behave like CMD (and match typical batch tutorials).
+ */
 async function runShellTask(taskName, command, cwd) {
-  const shellExecution = new vscode.ShellExecution(command, {
-    cwd: cwd || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
-  });
+  const cwdPath = cwd || vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  let shellExecution;
+  if (process.platform === "win32") {
+    shellExecution = new vscode.ShellExecution("cmd.exe", ["/d", "/c", command], {
+      cwd: cwdPath
+    });
+  } else {
+    shellExecution = new vscode.ShellExecution(command, {
+      cwd: cwdPath
+    });
+  }
   const task = new vscode.Task(
     { type: "shell" },
     vscode.TaskScope.Workspace,
     taskName,
-    "STM32 Helper",
+    "STM32 Helper (Windows)",
     shellExecution
   );
   await vscode.tasks.executeTask(task);

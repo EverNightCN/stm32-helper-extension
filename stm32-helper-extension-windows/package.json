@@ -1,8 +1,8 @@
 {
-  "name": "stm32-helper-extension",
-  "displayName": "STM32 Helper",
-  "description": "Simple STM32 build/flash helper commands for VSCode.",
-  "version": "0.0.3",
+  "name": "stm32-helper-extension-windows",
+  "displayName": "STM32 Helper (Windows)",
+  "description": "STM32 Helper for Windows: runs build/flash commands via cmd.exe so && and OpenOCD quoting match CMD (works when the default automation shell is PowerShell 5.x).",
+  "version": "0.0.4-win.1",
   "publisher": "local",
   "engines": {
     "vscode": "^1.85.0"

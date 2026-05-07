@@ -15,6 +15,12 @@ A lightweight VSCode extension that provides one-click STM32 workflow commands f
 
 It is especially useful when switching between different boards and programmers (for example, STM32F4 + CMSIS-DAP and STM32F1 + ST-Link).
 
+### Windows variant
+
+If you use **Cursor / VS Code on Windows** and the integrated terminal defaults to **PowerShell 5.x**, automation tasks may fail because **`&&` is not supported** there. Install **STM32 Helper (Windows)** instead (folder `stm32-helper-extension-windows/` in this repo): it runs commands through **`cmd.exe /d /c`**, matching **CMD** semantics for `&&` and OpenOCD quoting.
+
+Only enable **one** of the two extensions at a time (same command IDs).
+
 ## Commands
 
 Open Command Palette (`Cmd/Ctrl + Shift + P`) and run:
@@ -131,6 +137,12 @@ This generates a `.vsix` file in the extension root directory.
 - 工程自动配置（Auto Configure）
 
 适合在不同芯片/下载器之间切换，例如 STM32F4 + CMSIS-DAP、STM32F1 + ST-Link。
+
+### Windows 专用版
+
+在 **Windows** 上若默认自动化终端为 **PowerShell 5.x**，任务里的 **`&&`** 可能报错。请安装仓库内 **`stm32-helper-extension-windows`** 打包的 VSIX：通过 **`cmd.exe /d /c`** 执行命令，与 **CMD** 的 `&&` 及 OpenOCD 引号习惯一致。
+
+请勿同时启用普通版与 Windows 专用版（命令 ID 相同）。
 
 ## 命令
 
